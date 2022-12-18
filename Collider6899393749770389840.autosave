@@ -1,0 +1,258 @@
+class Collider implements Collidable {
+    ArrayList < Collider > collisions;
+    GameObject parent;
+
+    Collider(GameObject parent) {
+        this.parent = parent;
+        collisions = new ArrayList < Collider > ();
+    }
+
+    // Method for handling collisions.
+    void handleCollisions() {
+        // Loop through the list of colliders that are currently colliding with this collider.
+        for (int i = 0; i < collisions.size(); i++) {
+            Collider other = collisions.get(i);
+            // If the colliders are no longer intersecting, remove the other collider from the list.
+            if (!intersect(other)) {
+                collisions.remove(other);
+            } else {
+				if (isCollidingTop(other)) {
+					parent.onCollisionTop(other);
+				}
+				if (isCollidingBottom(other)) {
+					parent.onCollisionBottom(other);
+				}
+				if (isCollidingLeft(other)) {
+					parent.onCollisionLeft(other);
+				}
+				if (isCollidingRight(other)) {
+					parent.onCollisionRight(other);
+				}
+				if (isColliding(other)) {
+					parent.onCollision(other);
+				}
+            }
+        }
+    }
+	
+    // Method for detecting collisions.
+    void detectCollisions() {
+        // Loop through the list of all colliders in the game.
+        for (int i = 0; i < colliders.size(); i++) {
+            Collider other = colliders.get(i);
+            // If the colliders are intersecting, add the other collider to the list of colliders that are colliding with this collider.
+            if (intersect(other)) {
+                collisions.add(other);
+            }
+        }
+    }
+
+	// Method for checking if this collider is intersecting with another collider.
+	// Returns true if the colliders are intersecting, false otherwise.
+	boolean intersect(Collider other) {
+		// Use the best method for 2D collisions based on the type of the colliders.
+		if (this instanceof RectCollider && other instanceof RectCollider) {
+			// Calculate the minimum and maximum x and y values for each collider's AABB.
+			float minX1 = parent.position.x;
+			float maxX1 = parent.position.x + parent.size.x;
+			float minY1 = parent.position.y;
+			float maxY1 = parent.position.y + parent.size.y;
+			float minX2 = other.parent.position.x;
+			float maxX2 = other.parent.position.x + other.parent.size.x;
+			float minY2 = other.parent.position.y;
+			float maxY2 = other.parent.position.y + other.parent.size.y;
+
+			// Check if the AABBs are overlapping (i.e. if there is a collision).
+			if (maxX1 > minX2 && minX1 < maxX2 && maxY1 > minY2 && minY1 < maxY2) {
+				return true;
+			}
+			return false;
+		} else if (this instanceof SphereCollider && other instanceof SphereCollider) {
+			// Calculate the distance between the centers of the two colliders.
+			float distance = dist(parent.position.x, parent.position.y, other.parent.position.x, other.parent.position.y);
+			// Calculate the sum of the radii of the two colliders.
+			float radiiSum = parent.size.x / 2 + other.parent.size.x / 2;
+			// Check if the distance between the centers is less than the sum of the radii (i.e. if there is a collision).
+			if (distance < radiiSum) {
+				return true;
+			}
+			return false;
+		} else if (this instanceof RectCollider && other instanceof SphereCollider) {
+			// Calculate the minimum and maximum x and y values for the rect collider's AABB.
+			float minX = parent.position.x;
+			float maxX = parent.position.x + parent.size.x;
+			float minY = parent.position.y;
+			float maxY = parent.position.y + parent.size.y;
+			// Check if the center of the sphere collider is inside the rect collider's AABB.
+			if (other.parent.position.x > minX && other.parent.position.x < maxX && other.parent.position.y > minY && other.parent.position.y < maxY) {
+				return true;
+			}
+			// Check if the distance between the center of the sphere collider and any of the edges of the rect collider is less than the radius of the sphere collider.
+			if (dist(other.parent.position.x, other.parent.position.y, minX, minY) < other.parent.size.x / 2) {
+				return true;
+			}
+			if (dist(other.parent.position.x, other.parent.position.y, maxX, minY) < other.parent.size.x / 2) {
+				return true;
+			}
+			if (dist(other.parent.position.x, other.parent.position.y, minX, maxY) < other.parent.size.x / 2) {
+				return true;
+			}
+			if (dist(other.parent.position.x, other.parent.position.y, maxX, maxY) < other.parent.size.x / 2) {
+				return true;
+			}
+			return false;
+		} else if (this instanceof SphereCollider && other instanceof RectCollider) {
+			// Calculate the minimum and maximum x and y values for the rect collider's AABB.
+			float minX = other.parent.position.x;
+			float maxX = other.parent.position.x + other.parent.size.x;
+			float minY = other.parent.position.y;
+			float maxY = other.parent.position.y + other.parent.size.y;
+			// Check if the center of the sphere collider is inside the rect collider's AABB.
+			if (parent.position.x > minX && parent.position.x < maxX && parent.position.y > minY && parent.position.y < maxY) {
+				return true;
+			}
+			// Check if the distance between the center of the sphere collider and any of the edges of the rect collider is less than the radius of the sphere collider.
+			if (dist(parent.position.x, parent.position.y, minX, minY) < parent.size.x / 2) {
+				return true;
+			}
+			if (dist(parent.position.x, parent.position.y, maxX, minY) < parent.size.x / 2) {
+				return true;
+			}
+			if (dist(parent.position.x, parent.position.y, minX, maxY) < parent.size.x / 2) {
+				return true;
+			}
+			if (dist(parent.position.x, parent.position.y, maxX, maxY) < parent.size.x / 2) {
+				return true;
+			}
+			return false;
+		}
+		return false;
+	}
+
+	// Method for checking if this collider is intersecting with a point.
+	// Returns true if the collider is intersecting with the point, false otherwise.
+	boolean intersect(PVector point) {
+		// Use the best method for 2D collisions based on the type of the collider.
+		if (this instanceof RectCollider) {
+			// Calculate the minimum and maximum x and y values for the collider's AABB.
+			float minX = parent.position.x;
+			float maxX = parent.position.x + parent.size.x;
+			float minY = parent.position.y;
+			float maxY = parent.position.y + parent.size.y;
+			// Check if the point is inside the collider's AABB (i.e. if there is a collision).
+			if (point.x > minX && point.x < maxX && point.y > minY && point.y < maxY) {
+				return true;
+			}
+			return false;
+		} else if (this instanceof SphereCollider) {
+			// Calculate the distance between the center of the collider and the point.
+			float distance = dist(parent.position.x, parent.position.y, point.x, point.y);
+			// Check if the distance between the center of the collider and the point is less than the radius of the collider (i.e. if there is a collision).
+			if (distance < parent.size.x / 2) {
+				return true;
+			}
+			return false;
+		}
+		return false;
+	}
+
+	// Method for checking if this collider is intersecting with a line.
+	// Returns true if the collider is intersecting with the line, false otherwise.
+	boolean intersect(Line line) {
+		// Use the best method for 2D collisions based on the type of the collider.
+		if (this instanceof RectCollider) {
+			// Calculate the minimum and maximum x and y values for the collider's AABB.
+			float minX = parent.position.x;
+			float maxX = parent.position.x + parent.size.x;
+			float minY = parent.position.y;
+			float maxY = parent.position.y + parent.size.y;
+			// Check if the line is inside the collider's AABB (i.e. if there is a collision).
+			if (line.start.x > minX && line.start.x < maxX && line.start.y > minY && line.start.y < maxY) {
+				return true;
+			}
+			if (line.end.x > minX && line.end.x < maxX && line.end.y > minY && line.end.y < maxY) {
+				return true;
+			}
+			// Check if the line intersects any of the edges of the collider's AABB.
+			if (line.intersect(new Line(minX, minY, maxX, minY))) {
+				return true;
+			}
+			if (line.intersect(new Line(minX, minY, minX, maxY))) {
+				return true;
+			}
+			if (line.intersect(new Line(maxX, minY, maxX, maxY))) {
+				return true;
+			}
+			if (line.intersect(new Line(minX, maxY, maxX, maxY))) {
+				return true;
+			}
+			return false;
+		} else if (this instanceof SphereCollider) {
+			// Calculate the distance between the center of the collider and the line.
+			float distance = dist(parent.position.x, parent.position.y, line.start.x, line.start.y);
+			// Check if the distance between the center of the collider and the line is less than the radius of the collider (i.e. if there is a collision).
+			if (distance < parent.size.x / 2) {
+				return true;
+			}
+			return false;
+		}
+		return false;
+	}
+
+	// implement the abstract method from the Collidable interface
+	boolean isColliding(Collider other) {
+		// Check if the other object is a collider.
+		if (other instanceof Collider) {
+			// Check if the colliders are intersecting.
+			if (intersect((Collider) other)) {
+				// If they are, call the onCollision method of the parent object.
+				parent.onCollision(other);
+			}
+		}
+	}
+
+	boolean isCollidingTop(Collider other) {
+		// Check if the other object is a collider.
+		if (other instanceof Collider) {
+			// Check if the colliders are intersecting.
+			if (intersect((Collider) other)) {
+				// If they are, call the onCollisionTop method of the parent object.
+				parent.onCollisionTop(other);
+			}
+		}
+	}
+
+	boolean isCollidingBottom(Collider other) {
+		// Check if the other object is a collider.
+		if (other instanceof Collider) {
+			// Check if the colliders are intersecting.
+			if (intersect((Collider) other)) {
+				// If they are, call the onCollisionBottom method of the parent object.
+				parent.onCollisionBottom(other);
+			}
+		}
+	}
+
+	boolean isCollidingLeft(Collider other) {
+		// Check if the other object is a collider.
+		if (other instanceof Collider) {
+			// Check if the colliders are intersecting.
+			if (intersect((Collider) other)) {
+				// If they are, call the onCollisionLeft method of the parent object.
+				parent.onCollisionLeft(other.parent);
+			}
+		}
+	}
+
+	boolean isCollidingRight(Collider other) {
+		// Check if the other object is a collider.
+		if (other instanceof Collider) {
+			// Check if the colliders are intersecting.
+			if (intersect((Collider) other)) {
+				// If they are, call the onCollisionRight method of the parent object.
+				parent.onCollisionRight(other);
+			}
+		}
+	}
+
+}

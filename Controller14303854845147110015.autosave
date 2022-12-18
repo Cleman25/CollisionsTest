@@ -1,0 +1,171 @@
+//import com.tlaen.jgamepad.*;
+import java.awt.event.KeyEvent;
+import net.java.games.input.*;
+import org.gamecontrolplus.*;
+import org.gamecontrolplus.gui.*;
+
+class GameControl {
+    GameControlPlus gcp;
+    ControlIO control;
+    ControlDevice device;
+    
+    ControlButton button;
+    ControlHat hat;
+    ControlSlider slider;
+    Map<String, Integer> inputKeys;
+    Map<String, Integer> inputKeyCodes;
+    Map<String, Integer> inputButtons;
+    Map<String, Float> inputAxes;
+    GameObject parent;
+
+    GameControl(GameObject parent) {
+        this.parent = parent;
+        inputKeys = new HashMap<String, Integer>();
+        inputButtons = new HashMap<String, Integer>();
+        inputAxes = new HashMap<String, Float>();
+        control = ControlIO.getInstance(this);
+    }
+
+    void setInputKey(String action, int key) {
+        inputKeys.put(action, key);
+        switch(action) {
+            case "left":
+                setInputButton(action, GameControlPlus.LEFT_JOYSTICK_LEFT);
+                setInputAxis(action, GameControlPlus.LEFT_JOYSTICK_HORIZ);
+                setInputKeyCode(action, KeyEvent.VK_LEFT);
+                break;
+            case "right":
+                setInputButton(action, GameControlPlus.LEFT_JOYSTICK_RIGHT);
+                setInputAxis(action, GameControlPlus.LEFT_JOYSTICK_HORIZ);
+                setInputKeyCode(action, KeyEvent.VK_RIGHT);
+                break;
+            case "up":
+                setInputButton(action, GameControlPlus.LEFT_JOYSTICK_UP);
+                setInputAxis(action, GameControlPlus.LEFT_JOYSTICK_VERT);
+                setInputKeyCode(action, KeyEvent.VK_UP);
+                break;
+            case "down":
+                setInputButton(action, GameControlPlus.LEFT_JOYSTICK_DOWN);
+                setInputAxis(action, GameControlPlus.LEFT_JOYSTICK_VERT);
+                setInputKeyCode(action, KeyEvent.VK_DOWN);
+                break;
+            case "jump":
+                setInputButton(action, GameControlPlus.A_BUTTON);
+                setInputAxis(action, GameControlPlus.RIGHT_TRIGGER);
+                setInputKeyCode(action, KeyEvent.VK_SPACE);
+                break;
+            default:
+                setInputKeyCode(action, key);
+                break;
+        }
+    }
+
+    void setInputKeyCode(String action, int keyCode) {
+        inputKeyCodes.put(action, keyCode);
+        gcp.assignKey(action, keyCode);
+    }
+
+    void setInputButton(String action, int button) {
+        inputButtons.put(action, button);
+        gcp.assignButton(action, button);
+    }
+
+    void setInputAxis(String action, int axis) {
+        inputAxes.put(action, axis);
+        gcp.assignAxis(action, axis);
+    }
+
+    boolean isInputActive(String action) {
+        if (inputKeys.containsKey(action) && keyPressed && key == inputKeys.get(action)) {
+            return true;
+        }
+        if (inputKeyCodes.containsKey(action) && keyPressed && keyCode == inputKeyCodes.get(action)) {
+            return true;
+        }
+        if (inputButtons.containsKey(action) && getButton(action)) {
+            return true;
+        }
+        if (inputAxes.containsKey(action) && abs(getAxis(inputAxes.get(action))) > 0.5f) {
+            return true;
+        }
+        return false;
+    }
+
+    float getAxis(String axisName) {
+        Controller[] controllers = ControllerEnvironment.getDefaultEnvironment().getControllers();
+        // Iterate over the controllers and try to find the one with the specified axis
+        for (Controller controller : controllers) {
+            if (controller.getType() == Controller.Type.STICK || controller.getType() == Controller.Type.GAMEPAD) {
+                // Check each component (axis or button) on the controller
+                for (Component component : controller.getComponents()) {
+                    // Check if the component's name matches the specified axis name
+                    if (component.getName().equalsIgnoreCase(axisName)) {
+                        // Return the component's current value
+                        return component.getPollData();
+                    }
+                }
+            }
+        }
+
+        // If the specified axis was not found, return 0
+        return 0;
+    }
+
+    float getAxis(float axis) {
+        Controller[] controllers = ControllerEnvironment.getDefaultEnvironment().getControllers();
+        // Iterate over the controllers and try to find the one with the specified axis
+        for (Controller controller : controllers) {
+            if (controller.getType() == Controller.Type.STICK || controller.getType() == Controller.Type.GAMEPAD) {
+                // Check each component (axis or button) on the controller
+                for (Component component : controller.getComponents()) {
+                    // Check if the component's index matches the specified axis index
+                    if (component.getIdentifier() == axis) {
+                        // Return the component's current value
+                        return component.getPollData();
+                    }
+                }
+            }
+        }
+
+        // If the specified axis was not found, return 0
+        return 0;
+    }
+
+    boolean getButton(String buttonName) {
+        Controller[] controllers = ControllerEnvironment.getDefaultEnvironment().getControllers();
+        // Iterate over the controllers and try to find the one with the specified button
+        for (Controller controller : controllers) {
+            if (controller.getType() == Controller.Type.STICK || controller.getType() == Controller.Type.GAMEPAD) {
+                // Check each component (axis or button) on the controller
+                for (Component component : controller.getComponents()) {
+                    // Check if the component is a button and its name or identifier matches the specified button name
+                    if (component.getType() == Component.Type.BUTTON && (component.getName().equalsIgnoreCase(buttonName) || component.getIdentifier().getName().equalsIgnoreCase(buttonName))) {
+                        // Return the component's current state
+                        return component.getPollData() == 1.0f;
+                    }
+                }
+            }
+        }
+
+        // If the specified button was not found, return false
+        return false;
+    }
+
+    void update() {
+        if (isInputActive("left")) {
+            println("left");
+        }
+        if (isInputActive("right")) {
+            println("right");
+        }
+        if (isInputActive("up")) {
+            println("up");
+        }
+        if (isInputActive("down")) {
+            println("down");
+        }
+        if (isInputActive("jump")) {
+            println("jump");
+        }
+    }
+}

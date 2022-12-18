@@ -1,0 +1,105 @@
+abstract class GameObject {
+    PVector pos, vel, lastPos, delta, size, acc, gravity;
+    boolean useGravity = false, canJump = true, inAir = false, isMoving = false, isMovable = true, rendered = false;
+    float friction = 0.99;
+    Collider collider;
+    GameControl controller;
+    color fill = color(255, 0, 0), outline = color(255), text = color(0);
+    public GameObject(PVector pos, PVector size, boolean mvb) {
+        this.pos = pos;
+        this.size = size;
+        this.isMovable = mvb;
+        vel = new PVector(0, 0);
+        acc = new PVector(0, 0);
+        gravity = new PVector(0, 0.1);
+        delta = new PVector(0, 0);
+        lastPos = new PVector(0, 0);
+        gameObjects.add(this);
+        collider = new Collider(this);
+        controller = new GameControl(this);
+    }
+
+    void render() {
+        pushMatrix();
+        stroke(outline);
+        boundaryBox();
+        strokeWeight(1);
+        fill(fill);
+        rect(pos.x, pos.y, size.x, size.y, 2);
+        //fill(#ea4040);
+        //noStroke();
+        //rect(pos.x, pos.y, size.x-10, size.y-10,2);
+        popMatrix();
+        rendered = true;
+    }
+
+    void update() {
+        controls();
+        isMoving = delta.x != 0;
+        lastPos = pos.copy();
+    }
+
+    void boundaryBox() {
+        if (collider instanceof RectCollider) {
+            rect(pos.x, pos.y, size.x, size.y);
+        } else if(collider instanceof SphereCollider) {
+            ellipse(pos.x, pos.y, size.x, size.y);
+        }
+    }
+
+    // detects the 5 basic actions (up, left, down, right, jump) and allows the player to double jump if the canJump boolean is true and the player is in the air
+    abstract void controls() {
+        if (controller.isInputActive("up")) {
+            onUp();
+        }
+        if (controller.isInputActive("left")) {
+            onLeft();
+        }
+        if (controller.isInputActive("down")) {
+            onDown();
+        }
+        if (controller.isInputActive("right")) {
+            onRight();
+        }
+        if (controller.isInputActive("jump")) {
+            if (canJump && !inAir) {
+                onJump();
+            } else if(canJump && inAir) {
+                onDoubleJump();
+            }
+        }
+    };
+
+    // basic actions
+    void onUp() {
+		
+	}
+
+    void onLeft() {}
+
+    void onDown() {}
+
+    void onRight() {}
+
+    void onJump() {}
+
+    void onDoubleJump() {}
+
+
+    // garbage collection
+    abstract void dispose() {
+        destroy();
+    }
+
+    abstract void destroy() {
+        if (gameObjects.contains(this)) {
+            gameObjects.remove(this);
+            if (collider != null) {
+                collider.dispose();
+            }
+        }
+        if (collisions.contains(this)) {
+            collisions.remove(this);
+        }
+    }
+}

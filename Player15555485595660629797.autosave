@@ -1,0 +1,154 @@
+class Player extends GameObject {
+  public Player(PVector pos, PVector size) {
+    super(pos, size, true);
+    fill = color(255);
+    outline = color(255, 0, 0);
+    gravity.set(0, 0.2);
+    useGravity = true;
+  }
+
+  void render() {
+    super.render();
+    textFont(createFont("Arial Black", 12));
+    fill(text);
+    text("X:"+pos.x+"\r\nY:"+pos.y, pos.x, pos.y - 40);
+  }
+
+  void update() {
+    super.update();
+    if (this.moveable == true) {
+     move();
+    }
+    gravity();
+    jump();
+    dimensions();
+    isFalling = !(delta.y <= 0);
+    lastPos = pos.copy();
+    collided = !collisions.isEmpty();
+    detectCollision();
+    collisions();
+  }
+  
+  void old_update() {
+    super.update();
+    old_move(vel.x, vel.y);
+    vel.x *= friction;
+    vel.y *= friction;
+    accelerate(0, gravity.y);
+  }
+
+  void onCollisionTop(GameObject obj) {
+  }
+
+  void onCollisionLeft(GameObject obj) {
+  }
+
+  void onCollisionRight(GameObject obj) {
+  }
+
+  void onCollisionBottom(GameObject obj) {
+  }
+
+  void handleCollision(GameObject obj) {
+    super.handleCollision(obj);
+    //vel.x = 0;
+    verticalCollision(obj);
+    horizontalCollision(obj);
+  }
+
+  void verticalCollision(GameObject o) {
+    if (pos.x >= o.left && pos.x <= o.right) {
+      if (bottom >= o.top && top < o.top) {
+        colBottom = true;
+        pos.y = o.top - size.y/2;
+        vel.y = 0;
+        isJumping = false;
+        canJump = true;
+        onCollisionBottom(o);
+      } else if (top <= o.bottom && bottom > o.bottom) {
+        colTop = true;
+        vel.y = gravity.y;
+        pos.y = o.bottom + size.y/2;
+        isJumping = false;
+        canJump = false;
+        onCollisionTop(o);
+      }
+    }
+  }
+
+  void horizontalCollision(GameObject o) {
+    if (pos.y >= o.top && pos.y <= o.bottom) {
+      if (right >= o.left && left < o.left) {
+        colRight = true;
+        pos.x = o.left - size.x/2;
+        vel.x = 0;
+        onCollisionRight(o);
+      } else if (left <= o.right && right > o.right) {
+        colLeft = true;
+        pos.x = o.right + size.x/2;
+        vel.x = 0;
+        onCollisionLeft(o);
+      }
+    }
+  }
+
+  void gravity() {
+    if (useGravity) {
+      if (isFalling || isJumping) {
+        canJump = false;
+      } else {
+        canJump = true;
+      }
+      accelerate(0, gravity.y * deltaTime);
+      delta.y = pos.y - lastPos.y;
+    }
+  }
+  
+  void accelerate(float accX, float accY) {
+    vel.x += accX;
+    vel.y += accY;
+  }
+
+  void controls() {
+    super.controls();
+  }
+
+  void move() {
+    if (pos.x < 0)
+      pos.x = width;
+    else if (pos.x > width)
+      pos.x = 0;
+    pos.x += vel.x * deltaTime;
+    pos.y += vel.y * deltaTime;
+    PrintDetails();
+    delta.x = pos.x - lastPos.x;
+    isMoving = delta.mag() != 0;
+  }
+  void jump() {
+    if (isJumping) {
+      canJump = false;
+    }
+  }
+  
+  void old_move(float delX, float delY) {
+    dimensions();
+    pos.x += delX;
+    pos.y += delY;
+    delta.x = pos.x - lastPos.x;
+    delta.y = pos.y - lastPos.y;
+  }
+
+  void PrintCollided() {
+    println("Colliding: Top:" + colTop + " - Left: " + colLeft + " - Right: " + colRight + " - Bottom: " + colBottom);
+  }
+
+  void PrintDetails() {
+    println("Pos: \t " + lastPos + "\nLastPos: \t " + pos);
+    println("Delta: \t " + delta);
+    println("Vel: \t " + vel + " | Gravity:" + gravity);
+    println("Bools: \t Gravity:" + useGravity + " | Moving:" + isMoving + " | Jumping:" + isJumping + " | Falling:" + isFalling + " | Can jump:" + canJump + " | Moveable:" + moveable + " | Collided:" + collided);
+    println("Collisions:" + collisions);
+    println("Quad: \t Top:" + top+" Left:" + left + " Right+" + right + " Bottom:" + bottom);
+    PrintCollided();
+  }
+}
